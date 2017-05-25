@@ -248,7 +248,7 @@ void NodeGraph::DisplayNodes()
     //  ImGui::PopID();
     //}
     //ImGui::EndChild();
-    ImGui::SetCursorPos(it->second->Pos);
+    ImGui::SetCursorScreenPos(offset + it->second->Pos);
     ImGui::Text(it->second->Name);
     //draw a line under the name of the node.
     draw_list->AddLine(offset + ImVec2(it->second->Pos.x, it->second->Pos.y + ImGui::GetFontSize()), offset + ImVec2(it->second->Pos.x + it->second->Size.x, it->second->Pos.y + ImGui::GetFontSize()), ImColor(120, 120, 120));
@@ -319,7 +319,12 @@ void NodeGraph::DisplayNodes()
       //  }
       //}
 
-      //if (ImGui::IsItemHovered())
+      /*if (ImGui::IsItemHovered())
+      {
+        ImGui::BeginTooltip();
+        ImGui::Text("create ping here");
+        ImGui::EndTooltip();
+      }*/
       //{
       //  int slot = IfClickingOnSlot(it->second, ImGui::GetIO().MouseClickedPos[0] - offset);
       //  if (slot != -1)

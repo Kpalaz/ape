@@ -1,6 +1,7 @@
 #ifndef imgui_addons
 #include "imgui.h"
 #include "imgui_impl_dx9.h"
+#include "imgui_internal.h"
 #include "imconfig.h"
 #include <string>
 

@@ -169,52 +169,157 @@ namespace ImGui
 
     return selection_changed;
   }
-  IMGUI_API bool InputNodePin(std::string name, bool connection, ImVec2 pos)
+  bool InputNodePin(std::string name, bool connection, ImVec2 pos)
   {
-    ImGuiStyle& style = ImGui::GetStyle();
-    const ImVec2 itemSpacing = style.ItemSpacing;
-    const ImVec4 color = style.Colors[ImGuiCol_Button];
-    const ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
-    const ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
-    const ImVec4 colorText = style.Colors[ImGuiCol_Text];
 
-    ImColor slotcol = ImColor(150, 150, 150, 150);
-    ImDrawList *draw_list = ImGui::GetWindowDrawList();
-    //draw_list->ChannelsSplit(2);
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+      return false;
 
-    ImGui::SetCursorScreenPos(pos - ImVec2(0, ImGui::GetFontSize() *0.6f));
+    ImGuiContext& g = *GImGui;
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(name.c_str());
+    const ImVec2 label_size = CalcTextSize(name.c_str(), NULL, true);
 
-    //ImGui::SetCursorPos(it->second->GetOutputSlotPos(slot_idx) - ImVec2(it->second->Outputs[slot_idx].first.length() * ImGui::GetFontSize() * 0.7f, 0));
-    draw_list->AddCircleFilled(GetCursorScreenPos() + ImVec2(0, ImGui::GetFontSize() - 5.0f), 4.0f, slotcol);
-    ImGui::SetCursorScreenPos(pos + ImVec2(6.0f,- ImGui::GetFontSize() *0.6f));
-    //ImGui::SameLine();
-    ImGui::Text("%s", name.c_str());
-    //ImGui::NewLine();
-    //draw_list->ChannelsMerge();
-    return false;
+    if (label_size.x < 0.0f)
+    {
+      return false;
+    }
+
+
+    SetCursorScreenPos(pos);
+    const ImRect check_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(label_size.y + style.FramePadding.y * 2 - 1, label_size.y + style.FramePadding.y * 2 - 1));
+    ItemSize(check_bb, style.FramePadding.y);
+
+    ImRect total_bb = check_bb;
+
+    const ImRect text_bb(window->DC.CursorPos + ImVec2(0, style.FramePadding.y), window->DC.CursorPos + ImVec2(0, style.FramePadding.y) - label_size);
+    if (label_size.x > 0)
+    {
+      ItemSize(ImVec2(text_bb.GetWidth(), check_bb.GetHeight()), style.FramePadding.y);
+      total_bb.Add(text_bb);
+    }
+
+    if (!ItemAdd(total_bb, &id))
+      return false;
+
+    ImVec2 center = check_bb.GetTL();
+    center.x = (float)(int)center.x + 0.5f;
+    center.y = (float)(int)center.y + 0.5f;
+    const float radius = check_bb.GetHeight() * 0.5f;
+
+    bool hovered, held;
+    bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
+
+    //TODO find a better solution
+    //if (label_size.x > 0)
+    //  SameLine(0, style.ItemInnerSpacing.x);
+    window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 16);
+    if (connection)
+    {
+      const float check_sz = ImMin(check_bb.GetWidth(), check_bb.GetHeight());
+      const float pad = ImMax(1.0f, (float)(int)(check_sz / 6.0f));
+      window->DrawList->AddCircleFilled(center, radius - pad, GetColorU32(ImGuiCol_CheckMark), 16);
+    }
+
+    if (window->Flags & ImGuiWindowFlags_ShowBorders)
+    {
+      window->DrawList->AddCircle(center + ImVec2(1, 1), radius, GetColorU32(ImGuiCol_BorderShadow), 16);
+      window->DrawList->AddCircle(center, radius, GetColorU32(ImGuiCol_Border), 16);
+    }
+
+    RenderText(ImVec2(center.x + radius + name.length(),center.y - radius), name.c_str());
+    return pressed;
   }
 
-  IMGUI_API bool OutputNodePin(std::string name, bool connection, ImVec2 pos)
+  bool ImGui::OutputNodePin(std::string name, bool connection, ImVec2 pos)
   {
-    ImGuiStyle& style = ImGui::GetStyle();
-    const ImVec2 itemSpacing = style.ItemSpacing;
-    const ImVec4 color = style.Colors[ImGuiCol_Button];
-    const ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
-    const ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
-    const ImVec4 colorText = style.Colors[ImGuiCol_Text];
+    
 
-    ImColor slotcol = ImColor(150, 150, 150, 150);
-    ImDrawList *draw_list = ImGui::GetWindowDrawList();
-    //draw_list->ChannelsSplit(2);
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+      return false;
 
-    ImGui::SetCursorScreenPos(pos - ImVec2(name.length()* ImGui::GetFontSize() *0.6f, ImGui::GetFontSize() *0.6f));
-    //ImGui::AlignFirstTextHeightToWidgets();
-    ImGui::Text("%s", name.c_str());
-    ImGui::SameLine();
-    //pos + ImVec2(name.length()* ImGui::GetFontSize(),0)
-    draw_list->AddCircleFilled(GetCursorScreenPos() + ImVec2(0, ImGui::GetFontSize() - 5.0f), 4.0f, slotcol, 16);
-    ImGui::NewLine();
-    //draw_list->ChannelsMerge();
-    return false;
+    ImGuiContext& g = *GImGui;
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(name.c_str());
+    const ImVec2 label_size = CalcTextSize(name.c_str(), NULL, true);
+
+    if (label_size.x < 0.0f)
+    {
+      return false;
+    }
+
+
+   SetCursorScreenPos(pos);
+    const ImRect check_bb(window->DC.CursorPos,window->DC.CursorPos + ImVec2(label_size.y + style.FramePadding.y * 2 - 1,label_size.y + style.FramePadding.y * 2 - 1));
+    ItemSize(check_bb, style.FramePadding.y);
+
+    ImRect total_bb = check_bb;
+    
+    const ImRect text_bb(window->DC.CursorPos + ImVec2(0, style.FramePadding.y), window->DC.CursorPos + ImVec2(0, style.FramePadding.y) - label_size);
+    if (label_size.x > 0)
+    {
+      ItemSize(ImVec2(text_bb.GetWidth(), check_bb.GetHeight()), style.FramePadding.y);
+      total_bb.Add(text_bb);
+    }
+
+    if (!ItemAdd(total_bb, &id))
+      return false;
+
+    ImVec2 center =  check_bb.GetTL();
+    center.x = (float)(int)center.x + 0.5f;
+    center.y = (float)(int)center.y + 0.5f;
+    const float radius = check_bb.GetHeight() * 0.5f;
+
+    bool hovered, held;
+    bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
+    
+    //TODO find a better solution
+    RenderText(ImVec2(center.x - label_size.x - name.length() - radius, center.y - radius), name.c_str());
+    if (label_size.x > 0)
+      SameLine(0, style.ItemInnerSpacing.x);
+    window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 16);
+    if (connection)
+    {
+      const float check_sz = ImMin(check_bb.GetWidth(), check_bb.GetHeight());
+      const float pad = ImMax(1.0f, (float)(int)(check_sz / 6.0f));
+      window->DrawList->AddCircleFilled(center, radius - pad, GetColorU32(ImGuiCol_CheckMark), 16);
+    }
+
+    if (window->Flags & ImGuiWindowFlags_ShowBorders)
+    {
+      window->DrawList->AddCircle(center + ImVec2(1, 1), radius, GetColorU32(ImGuiCol_BorderShadow), 16);
+      window->DrawList->AddCircle(center, radius, GetColorU32(ImGuiCol_Border), 16);
+    }
+    
+    return pressed;
   }
+
 }
+
+/*
+ImGuiStyle& style = ImGui::GetStyle();
+const ImVec2 itemSpacing = style.ItemSpacing;
+const ImVec4 color = style.Colors[ImGuiCol_Button];
+const ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
+const ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
+const ImVec4 colorText = style.Colors[ImGuiCol_Text];
+
+ImColor slotcol = ImColor(150, 150, 150, 150);
+ImDrawList *draw_list = ImGui::GetWindowDrawList();
+//draw_list->ChannelsSplit(2);
+
+ImGui::SetCursorScreenPos(pos - ImVec2(name.length()* ImGui::GetFontSize() *0.6f, ImGui::GetFontSize() *0.6f));
+//ImGui::AlignFirstTextHeightToWidgets();
+ImGui::Text("%s", name.c_str());
+ImGui::SameLine();
+//pos + ImVec2(name.length()* ImGui::GetFontSize(),0)
+draw_list->AddCircleFilled(GetCursorScreenPos() + ImVec2(0, ImGui::GetFontSize() - 5.0f), 4.0f, slotcol, 16);
+ImGui::NewLine();
+//draw_list->ChannelsMerge();
+return false;
+
+
+
+*/
