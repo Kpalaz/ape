@@ -84,7 +84,6 @@ private:
   float GRID_SZ = 64.0f;
   std::map<int,Node*> nodes;
   std::vector<NodeLink> links;
-  bool DraggingLink = false;
   ImVec2 offset;
   ImDrawList* draw_list;
   bool open_context_menu = false;

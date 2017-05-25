@@ -21,10 +21,7 @@ NodeLink::NodeLink(int input_idx, int input_slot, int output_idx, int output_slo
 
 NodeGraph::NodeGraph()
 {
-  //first and second node will always be output
-  //nodes[0] = new Node(0, "Input", ImVec2(100, 100), 0, 1);
-  //nodes[1] = new Node(1, "Output", ImVec2(100, 200), 1, 0);
-  //nodes[2] = new Node(2, "Test", ImVec2(200, 200), 4,4);
+  //first and second node will always be input and output
   CreateNode("Input", ImVec2(100, 100), std::vector<std::pair<std::string, bool>>(), std::vector<std::pair<std::string, bool>>(1, std::make_pair(std::string("output"), false)));
   CreateNode("Output", ImVec2(100, 200), std::vector<std::pair<std::string, bool>>(1, std::make_pair(std::string("input"), false)), std::vector<std::pair<std::string, bool>>());
   CreateNode("Test", ImVec2(200, 200), std::vector<std::pair<std::string, bool>>(4, std::make_pair(std::string("inputs"), false)), std::vector<std::pair<std::string, bool>>(4, std::make_pair(std::string("outputs"), false)));
@@ -35,7 +32,6 @@ void NodeGraph::Update()
   open_context_menu = false;
   node_hovered_in_list = -1;
   node_hovered_in_scene = -1;
-
   ImGui::BeginChild(100, ImVec2(1900, 1040), true, ImGuiWindowFlags_NoScrollbar); // no scroll bar region
   ImGui::Columns(2);
   DisplayList();
@@ -51,18 +47,14 @@ void NodeGraph::Update()
   ImGui::PushItemWidth(120.0f);
 
   offset = ImGui::GetCursorScreenPos() - scrolling;
-  //ImVec2 offset = ImVec2(ImGui::GetCursorScreenPos().x - scrolling.x, ImGui::GetCursorScreenPos().y - scrolling.y);
   draw_list = ImGui::GetWindowDrawList();
   draw_list->ChannelsSplit(2);
 
   DisplayGrid();
   DisplayNodes();
   DisplayLinks();
+
   draw_list->ChannelsMerge();
-
-
-
-
 
   //right click to open context
   if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
@@ -120,13 +112,6 @@ void NodeGraph::Update()
   ImGui::EndGroup();//console end
   ImGui::EndGroup();// scrollable region end
   ImGui::SameLine();
-  //ImGui::NextColumn();
-  //  ImGui::BeginGroup(); //modify start
-  //    ImGui::BeginChild("modify", ImVec2(300, 1020), true);
-  //      ImGui::Text("test");
-  //      ImGui::Text("test2");
-  //    ImGui::EndChild();
-  //  ImGui::EndGroup(); //modify end
   ImGui::EndChild();// no scroll bar region end
 }
 
@@ -176,7 +161,7 @@ void NodeGraph::DisplayLinks()
   {
 
     ImVec2 p1 = offset + GetNodeFromID(it->InputIdx)->GetInputSlotPos(it->InputSlot);
-    ImVec2 p2 = offset + it->End;// offset + GetNodeFromID(it->OutputIdx)->GetInputSlotPos(it->OutputSlot);
+    ImVec2 p2 = offset + GetNodeFromID(it->OutputIdx)->GetOutputSlotPos(it->OutputSlot);
 
                                  //ImVec2 p1 = ImVec2(offset.x + GetNodeFromID(it->InputIdx)->GetOutputSlotPos(it->InputSlot).x, offset.y + GetNodeFromID(it->InputIdx)->GetOutputSlotPos(it->InputSlot).y);
                                  //ImVec2 p2 = ImVec2(offset.x + node_out->GetInputSlotPos(link->OutputSlot).x, offset.y + node_out->GetInputSlotPos(link->OutputSlot).y);
@@ -185,29 +170,17 @@ void NodeGraph::DisplayLinks()
 
 
   //draw_list->ChannelsMerge();
+  //needs to happen every frame. 
   if (dragging)
   {
-    ImVec2 p1 = offset + GetNodeFromID(dragging->InputIdx)->GetInputSlotPos(dragging->InputSlot);
+    ImVec2 p1 = dragging->Start;
     ImVec2 p2 = dragging->End;
     draw_list->AddBezierCurve(p1, p1 + ImVec2(50, 0), p2 + ImVec2(-50, 0), p2, ImColor(200, 200, 100), 3.0f);
-  }
-  if (DraggingLink)
-  {
-    if (ImGui::IsMouseDown(0))
+    dragging->End = ImGui::GetMousePos();
+    
+    if (ImGui::IsMouseClicked(0) && ImGui::GetCurrentWindow()->Size == ImVec2(1600, 800))
     {
-      if (ImGui::IsMouseDragging(0, 0.0f))
-      {
-        //links.end()->End = ImGui::GetMousePos();
-        dragging->End = ImGui::GetMousePos();
-
-
-      }
-    }
-    else
-    {
-      links.push_back(*dragging);
       dragging = NULL;
-      DraggingLink = false;
     }
   }
 }
@@ -220,131 +193,55 @@ void NodeGraph::DisplayNodes()
     if (it->second == NULL)
       continue;
     ImGui::PushID(it->first);
-
-    //ImVec2 node_rect_min = ImVec2(offset.x + it->second->Pos.x, offset.y + it->second->Pos.y);
     ImVec2 node_rect_min = offset + it->second->Pos;
 
     // Display node contents first
     draw_list->ChannelsSetCurrent(1); // Foreground
     bool old_any_active = ImGui::IsAnyItemActive();
-    //ImGui::SetCursorScreenPos(ImVec2(node_rect_min.x + NODE_WINDOW_PADDING.x, node_rect_min.y + NODE_WINDOW_PADDING.y));
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
     ImGui::BeginGroup();
-    //ImGui::Columns(2, " ", false);
-    //ImGui::BeginChild("inputs");
-    //for (int slot_idx = 0; slot_idx < it->second->Inputs.size(); slot_idx++)
-    //{
-    //  ImGui::PushID(slot_idx);
-    //  ImGui::Text(it->second->Inputs[slot_idx].first.c_str());
-    //  ImGui::PopID();
-    //}
-    //ImGui::EndChild();
-    //ImGui::NextColumn();
-    //ImGui::BeginChild("outputs");
-    //for (int slot_idx = 0; slot_idx < it->second->Outputs.size(); slot_idx++)
-    //{
-    //  ImGui::PushID(slot_idx);
-    //  ImGui::Text(it->second->Inputs[slot_idx].first.c_str());
-    //  ImGui::PopID();
-    //}
-    //ImGui::EndChild();
     ImGui::SetCursorScreenPos(offset + it->second->Pos);
     ImGui::Text(it->second->Name);
     //draw a line under the name of the node.
-    draw_list->AddLine(offset + ImVec2(it->second->Pos.x, it->second->Pos.y + ImGui::GetFontSize()), offset + ImVec2(it->second->Pos.x + it->second->Size.x, it->second->Pos.y + ImGui::GetFontSize()), ImColor(120, 120, 120));
-    //ImGui::NewLine();
-    //ImGui::BeginChild("Column Data",ImVec2(it->second->Size));
-    //draw_list->ChannelsMerge();
-    //ImGui::PushItemWidth(it->second->Size.y);
-    //ImGui::Separator();
-    //ImGui::PopItemWidth();
-    //ImGui::Columns(2, " ", false);
-    //ImGui::BeginChild("inputs");
+    draw_list->AddLine(offset + ImVec2(it->second->Pos.x, it->second->Pos.y + ImGui::GetFontSize()),
+      offset + ImVec2(it->second->Pos.x + it->second->Size.x, it->second->Pos.y + ImGui::GetFontSize()), ImColor(120, 120, 120));
+
     for (int slot_idx = 0; slot_idx < it->second->Inputs.size(); slot_idx++)
     {
       ImGui::PushID(slot_idx);
-      //ImColor slotcol = ImColor(150, 150, 150, 150);
-      //if (it->second->Inputs[slot_idx].second)
-      //{
-      //  slotcol = ImColor(10, 10, 10);
-      //}
-      //draw_list->AddCircleFilled(offset + it->second->GetInputSlotPos(slot_idx) + ImVec2(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS), NODE_SLOT_RADIUS, slotcol);
-      //ImGui::SetCursorPos(it->second->GetInputSlotPos(slot_idx));
-      //ImGui::InvisibleButton(it->second->Inputs[slot_idx].first.c_str(), ImVec2(NODE_SLOT_RADIUS * 2, NODE_SLOT_RADIUS * 2));
-      ImGui::InputNodePin(it->second->Inputs[slot_idx].first, it->second->Inputs[slot_idx].second, offset + it->second->GetInputSlotPos(slot_idx));
-      //if (ImGui::IsItemHovered())
-      //{
-      //  int slot = IfClickingOnSlot(it->second, ImGui::GetIO().MouseClickedPos[0] - offset);
-      //  if (slot != -1)
-      //  {
-      //    //std::cout << "slot is: " << slot << std::endl;
-      //    it->second->Inputs[slot_idx].second = true;
-      //    dragging = new NodeLink(it->second->ID, slot_idx, -1, -1, ImGui::GetIO().MouseClickedPos[0] - offset, ImGui::GetIO().MouseClickedPos[0] - offset);
-      //    //links.push_back(NodeLink(-1, -1, -1, -1, ImGui::GetIO().MouseClickedPos[0] - offset, ImGui::GetIO().MouseClickedPos[0] - offset));
-      //    // *dragging = *(links.end());
-      //    DraggingLink = true;
-      //  }
-      //}
-      //ImGui::SameLine(); ImGui::Text(it->second->Inputs[slot_idx].first.c_str());
+      if (ImGui::InputNodePin(it->second->Inputs[slot_idx].first, it->second->Inputs[slot_idx].second, offset + it->second->GetInputSlotPos(slot_idx)))
+      {
+        dragging;
+      }
+      if (ImGui::IsItemClicked() && dragging )//&& (slot_idx == dragging->InputIdx || slot_idx == dragging->OutputIdx))
+      {
+        dragging->InputIdx = it->second->ID;
+        dragging->InputSlot = slot_idx;
+        dragging->End = offset + it->second->GetInputSlotPos(slot_idx);
+        links.push_back(*dragging);
+        dragging = NULL;
+      }
       ImGui::PopID();
     }
 
     for (int slot_idx = 0; slot_idx < it->second->Outputs.size(); slot_idx++)
     {
       ImGui::PushID(slot_idx);
-      //ImGui::SetCursorPos(offset + it->second->GetOutputSlotPos(slot_idx));
-      ImGui::OutputNodePin(it->second->Outputs[slot_idx].first, it->second->Outputs[slot_idx].second, offset + it->second->GetOutputSlotPos(slot_idx));
-      //ImColor slotcol = ImColor(150, 150, 150, 150);
-      //if (it->second->Outputs[slot_idx].second)
-      //{
-      //  slotcol = ImColor(10, 10, 10);
-      //}
-
-      //ImGui::Text(it->second->Outputs[slot_idx].first.c_str());
-      //ImGui::SameLine();
-      //draw_list->AddCircleFilled(offset + it->second->GetOutputSlotPos(slot_idx) + ImVec2(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS), NODE_SLOT_RADIUS, slotcol);
-      //if (ImGui::InvisibleButton(it->second->Outputs[slot_idx].first.c_str(), ImVec2(NODE_SLOT_RADIUS * 2, NODE_SLOT_RADIUS * 2)))
-      //{
-      //  ImVec2 pos = ImGui::GetIO().MouseClickedPos[0];
-
-      //  int slot = IfClickingOnSlot(it->second, pos - offset);
-      //  if (slot != -1)
-      //  {
-      //    std::cout << "slot is: " << slot << std::endl;
-      //    //it->second->Outputs[slot_idx].second = true;
-      //    dragging = new NodeLink(it->second->ID, slot_idx, -1, -1, pos - offset, pos - offset);
-      //    //links.push_back(NodeLink(-1, -1, -1, -1, ImGui::GetIO().MouseClickedPos[0] - offset, ImGui::GetIO().MouseClickedPos[0] - offset));
-      //    // *dragging = *(links.end());
-      //    DraggingLink = true;
-      //  }
-      //}
-
-      /*if (ImGui::IsItemHovered())
+      if (ImGui::OutputNodePin(it->second->Outputs[slot_idx].first, it->second->Outputs[slot_idx].second, offset + it->second->GetOutputSlotPos(slot_idx)))
       {
-        ImGui::BeginTooltip();
-        ImGui::Text("create ping here");
-        ImGui::EndTooltip();
-      }*/
-      //{
-      //  int slot = IfClickingOnSlot(it->second, ImGui::GetIO().MouseClickedPos[0] - offset);
-      //  if (slot != -1)
-      //  {
-      //    //std::cout << "slot is: " << slot << std::endl;
-      //    //it->second->Outputs[slot_idx].second = true;
-      //    dragging = new NodeLink(it->second->ID, slot_idx, -1, -1, ImGui::GetIO().MouseClickedPos[0] - offset, ImGui::GetIO().MouseClickedPos[0] - offset);
-      //    //links.push_back(NodeLink(-1, -1, -1, -1, ImGui::GetIO().MouseClickedPos[0] - offset, ImGui::GetIO().MouseClickedPos[0] - offset));
-      //    // *dragging = *(links.end());
-      //    DraggingLink = true;
-      //  }
-      //}
+        dragging = new NodeLink(-99, -99, it->second->ID, slot_idx, offset + it->second->GetOutputSlotPos(slot_idx), offset + it->second->GetOutputSlotPos(slot_idx));
+       
+      }
+      //check for dragging
+      if (ImGui::IsItemHovered() && dragging && (slot_idx == dragging->InputIdx || slot_idx == dragging->OutputIdx))
+      {
 
-
+      }
       ImGui::PopID();
     }
 
     ImGui::EndGroup();
     bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-    //it->second->Size = ImVec2(ImGui::GetItemRectSize().x + NODE_WINDOW_PADDING.x + NODE_WINDOW_PADDING.x, ImGui::GetItemRectSize().y + NODE_WINDOW_PADDING.y + NODE_WINDOW_PADDING.y);
     ImVec2 node_rect_max = ImVec2(node_rect_min.x + it->second->Size.x, node_rect_min.y + it->second->Size.y);
 
     // Display node box
@@ -376,7 +273,6 @@ void NodeGraph::DisplayNodes()
 
 int NodeGraph::IfClickingOnSlot(Node* inputs, ImVec2 pos)
 {
-  //ImVec2 offset(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS);
   //run through  slots to see if you are on them
   for (int i = 0; i <= inputs->Inputs.size(); ++i)
   {
@@ -444,11 +340,11 @@ Node* NodeGraph::CreateNode(std::string name, ImVec2 spawnpos, std::vector<std::
   fresh->GetLongestPinName();
   if (inputs > outputs)
   {
-     tempsize.y *= inputs.size();
+    tempsize.y *= inputs.size();
   }
   else
   {
-     tempsize.y *= outputs.size();
+    tempsize.y *= outputs.size();
   }
   ImGuiContext *test = ImGui::GetCurrentContext();
   tempsize.x += fresh->GetLongestPinName() * 10;
