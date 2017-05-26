@@ -30,6 +30,7 @@ class Node
 {
 public:
   friend NodeGraph;
+  friend NodeLink;
   ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x + 7.5f, Pos.y +  Size.y * ((float)slot_no + 1) / ((float)Inputs.size() + 1) + 10); }
   Node(int id, const char* name, const ImVec2& pos, std::vector<std::pair<std::string, bool>> inputs, std::vector<std::pair<std::string, bool>> outputs);
   ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x - 7.5f, Pos.y + Size.y * ((float)slot_no + 1) / ((float)Outputs.size() + 1) + 10); }
@@ -47,7 +48,11 @@ private:
 class NodeLink
 {
 public:
+  friend NodeGraph;
+  friend Node;
   NodeLink(int input_idx, int input_slot, int output_idx, int output_slot,ImVec2 start, ImVec2 end);
+  void Connect();
+  void FixStartEnd();
   int     InputIdx, InputSlot, OutputIdx, OutputSlot;
   ImVec2 Start;
   ImVec2 End;
@@ -57,20 +62,19 @@ class NodeGraph
 {
 public:
   friend Sandbox;
+  friend NodeLink;
   NodeGraph();
   void Update();
   int GetNextFreeID();
   std::vector<int> recycledids;
   ImVec2 windowsize;
-private:
+  Node* GetNodeFromID(int id);
+
   void CreateLink();
-  bool show_grid = true;
-  ImU32 GRID_COLOR = ImColor(200, 200, 200, 40);
-  ImVec2 scrolling = ImVec2(0.0f, 0.0f);
-  const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
+
+private:
   Node* NodeGraph::CreateNode(std::string name, ImVec2 spawnpos, std::vector<std::pair<std::string, bool>> inputs, std::vector<std::pair<std::string, bool>> outputs);
   void DestroyNode(Node* dead);
-  Node* GetNodeFromID(int id);
   int IfClickingOnSlot(Node* inputs, ImVec2 pos);
   void DisplayGrid();
   void DisplayLinks();
@@ -78,6 +82,10 @@ private:
   void DisplayList();
   void DisplayConsole();
   
+  bool show_grid = true;
+  ImVec2 scrolling = ImVec2(0.0f, 0.0f);
+  const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
+  ImU32 GRID_COLOR = ImColor(200, 200, 200, 40);
   int node_selected = -1;
   NodeLink *dragging = NULL;
   const float NODE_SLOT_RADIUS = 4.0f;

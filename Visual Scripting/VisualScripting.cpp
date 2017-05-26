@@ -148,10 +148,8 @@ void NodeGraph::DisplayGrid()
     ImVec2 canvas_sz = ImGui::GetWindowSize();
     for (float x = fmodf(offset.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
       draw_list->AddLine(win_pos + ImVec2(x, 0), win_pos + ImVec2(x, canvas_sz.y), GRID_COLOR);
-    //draw_list->AddLine(ImVec2(x + win_pos.x, win_pos.y), ImVec2(x + win_pos.x, win_pos.y + canvas_sz.y), GRID_COLOR);
     for (float y = fmodf(offset.y, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
       draw_list->AddLine(win_pos + ImVec2(0, y), win_pos + ImVec2(canvas_sz.x, y), GRID_COLOR);
-    //draw_list->AddLine(ImVec2(win_pos.x, win_pos.y + y), ImVec2(canvas_sz.x + win_pos.x, y + win_pos.y), GRID_COLOR);
   }
 }
 void NodeGraph::DisplayLinks()
@@ -159,25 +157,19 @@ void NodeGraph::DisplayLinks()
   //logic for links
   for (auto it = links.begin(); it != links.end(); ++it)
   {
-
     ImVec2 p1 = offset + GetNodeFromID(it->InputIdx)->GetInputSlotPos(it->InputSlot);
     ImVec2 p2 = offset + GetNodeFromID(it->OutputIdx)->GetOutputSlotPos(it->OutputSlot);
-
-                                 //ImVec2 p1 = ImVec2(offset.x + GetNodeFromID(it->InputIdx)->GetOutputSlotPos(it->InputSlot).x, offset.y + GetNodeFromID(it->InputIdx)->GetOutputSlotPos(it->InputSlot).y);
-                                 //ImVec2 p2 = ImVec2(offset.x + node_out->GetInputSlotPos(link->OutputSlot).x, offset.y + node_out->GetInputSlotPos(link->OutputSlot).y);
     draw_list->AddBezierCurve(p1, p1 + ImVec2(50, 0), p2 + ImVec2(-50, 0), p2, ImColor(200, 200, 100), 3.0f);
   }
 
-
-  //draw_list->ChannelsMerge();
-  //needs to happen every frame. 
+  /*logic for drawing the link that is being modified
+    needs to happen every frame. */
   if (dragging)
   {
     ImVec2 p1 = dragging->Start;
     ImVec2 p2 = dragging->End;
-    draw_list->AddBezierCurve(p1, p1 + ImVec2(50, 0), p2 + ImVec2(-50, 0), p2, ImColor(200, 200, 100), 3.0f);
+    draw_list->AddBezierCurve(p1, p1 + ImVec2(-50, 0), p2 + ImVec2(50, 0), p2, ImColor(200, 200, 100), 3.0f);
     dragging->End = ImGui::GetMousePos();
-    
     if (ImGui::IsMouseClicked(0) && ImGui::GetCurrentWindow()->Size == ImVec2(1600, 800))
     {
       dragging = NULL;
@@ -218,6 +210,14 @@ void NodeGraph::DisplayNodes()
         dragging->InputIdx = it->second->ID;
         dragging->InputSlot = slot_idx;
         dragging->End = offset + it->second->GetInputSlotPos(slot_idx);
+        //assume calling place is the end 
+        //if (dragging->End == offset - GetNodeFromID(dragging->InputIdx)->GetInputSlotPos(dragging->InputSlot))
+        //{
+        //  ImVec2 tempend = dragging->End;
+        //  dragging->End = dragging->Start;
+        //  dragging->Start = tempend;
+        //}
+
         links.push_back(*dragging);
         dragging = NULL;
       }
@@ -368,4 +368,22 @@ void NodeGraph::DisplayConsole()
 {
   //TODO set up logging system.
   //ImGui::Text("%s", logger.getline);
+}
+
+void NodeLink::FixStartEnd()
+{
+  
+ // if (link.End == offset - GetNodeFromID(link.InputIdx)->GetInputSlotPos(link.InputSlot))
+ // {
+ //   ImVec2 tempend = link.End;
+ //   link.End = link.Start;
+ //   link.Start = tempend;
+ // }
+  
+    return;
+}
+
+void NodeLink::Connect()
+{
+
 }
