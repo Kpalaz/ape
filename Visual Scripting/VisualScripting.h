@@ -30,7 +30,6 @@ class Node
 {
 public:
   friend NodeGraph;
-  friend NodeLink;
   ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x + 7.5f, Pos.y +  Size.y * ((float)slot_no + 1) / ((float)Inputs.size() + 1) + 10); }
   Node(int id, const char* name, const ImVec2& pos, std::vector<std::pair<std::string, bool>> inputs, std::vector<std::pair<std::string, bool>> outputs);
   ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x - 7.5f, Pos.y + Size.y * ((float)slot_no + 1) / ((float)Outputs.size() + 1) + 10); }
@@ -39,8 +38,8 @@ private:
   int     ID;
   char    Name[32];
   ImVec2  Pos, Size;
-  std::vector<std::pair<std::string,bool>> Inputs;
-  std::vector<std::pair<std::string,bool>> Outputs;
+  std::vector<std::pair<std::string,bool>> Inputs;  //names and connection status for pins.
+  std::vector<std::pair<std::string,bool>> Outputs; //names and connection status for pins.
   bool node_moving_active;
 
 };
@@ -49,7 +48,6 @@ class NodeLink
 {
 public:
   friend NodeGraph;
-  friend Node;
   NodeLink(int input_idx, int input_slot, int output_idx, int output_slot,ImVec2 start, ImVec2 end);
   void Connect();
   void FixStartEnd();

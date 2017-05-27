@@ -159,7 +159,7 @@ void NodeGraph::DisplayLinks()
   {
     ImVec2 p1 = offset + GetNodeFromID(it->InputIdx)->GetInputSlotPos(it->InputSlot);
     ImVec2 p2 = offset + GetNodeFromID(it->OutputIdx)->GetOutputSlotPos(it->OutputSlot);
-    draw_list->AddBezierCurve(p1, p1 + ImVec2(50, 0), p2 + ImVec2(-50, 0), p2, ImColor(200, 200, 100), 3.0f);
+    draw_list->AddBezierCurve(p1, p1 - ImVec2(50, 0), p2 + ImVec2(50, 0), p2, ImColor(200, 200, 100), 3.0f);
   }
 
   /*logic for drawing the link that is being modified
@@ -168,8 +168,9 @@ void NodeGraph::DisplayLinks()
   {
     ImVec2 p1 = dragging->Start;
     ImVec2 p2 = dragging->End;
-    draw_list->AddBezierCurve(p1, p1 + ImVec2(-50, 0), p2 + ImVec2(50, 0), p2, ImColor(200, 200, 100), 3.0f);
+    draw_list->AddBezierCurve(p1, p1 - ImVec2(50, 0), p2 + ImVec2(50, 0), p2, ImColor(200, 200, 100), 3.0f);
     dragging->End = ImGui::GetMousePos();
+    //TODO find better way to check if you are not on a node.
     if (ImGui::IsMouseClicked(0) && ImGui::GetCurrentWindow()->Size == ImVec2(1600, 800))
     {
       dragging = NULL;
@@ -205,20 +206,14 @@ void NodeGraph::DisplayNodes()
       {
         dragging;
       }
-      if (ImGui::IsItemClicked() && dragging )//&& (slot_idx == dragging->InputIdx || slot_idx == dragging->OutputIdx))
+      if (ImGui::IsItemClicked() && dragging )
       {
         dragging->InputIdx = it->second->ID;
         dragging->InputSlot = slot_idx;
         dragging->End = offset + it->second->GetInputSlotPos(slot_idx);
-        //assume calling place is the end 
-        //if (dragging->End == offset - GetNodeFromID(dragging->InputIdx)->GetInputSlotPos(dragging->InputSlot))
-        //{
-        //  ImVec2 tempend = dragging->End;
-        //  dragging->End = dragging->Start;
-        //  dragging->Start = tempend;
-        //}
-
         links.push_back(*dragging);
+        GetNodeFromID(dragging->InputIdx)->Inputs[dragging->InputSlot].second = true;
+        GetNodeFromID(dragging->OutputIdx)->Outputs[dragging->OutputSlot].second = true;
         dragging = NULL;
       }
       ImGui::PopID();
